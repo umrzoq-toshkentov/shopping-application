@@ -26,9 +26,27 @@ export class TopPageService {
   async findByCategory(
     firstCategory: TopLevelCategory,
   ): Promise<DocumentType<TopPageModel>[]> {
-    return this.topPageModel
-      .find({ firstCategory }, { alias: 1, secondCategory: 1, title: 1 })
-      .exec();
+    return (await this.topPageModel
+      .aggregate([
+        {
+          $match: { firstCategory },
+        },
+        {
+          $group: {
+            _id: {
+              secondCategory: '$secondCategory',
+              pages: {
+                $push: {
+                  alias: '$alias',
+                  title: '$title',
+                  _id: '$_id',
+                },
+              },
+            },
+          },
+        },
+      ])
+      .exec()) as DocumentType<TopPageModel>[];
   }
 
   async deleteById(id: string): Promise<DocumentType<TopPageModel>> {
